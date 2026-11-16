@@ -55,6 +55,10 @@ def job(root: Path):
         curr_content = fpath_abs.read_text(encoding="utf-8")
         
         all_counter += 1
+
+        if all_counter % 50 == 0:
+            print(".", end="")
+
         if REMEMBER_TAG in curr_content: # check if the corresponding tag exists
             had_counter += 1
 
