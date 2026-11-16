@@ -15,7 +15,7 @@ STORE_KEY = 'remember'
 
 # utils -------------------------
 
-def extract_front_matter(content: str) -> tuple:
+def extract_front_matter_with_guard(content: str) -> tuple:
     if content.startswith("---"):
         end_content_i = content.find('---', 3)
         if end_content_i != -1:
@@ -53,7 +53,7 @@ def job(root: Path):
 
     scheduler = Scheduler() #. Initialize the FSRS scheduler with default parameters
 
-    for fpath_abs in args.root.rglob("*.md"): # for all markdown file
+    for fpath_abs in root.rglob("*.md"): # for all markdown file
         fpath_rel = fpath_abs.relative_to(args.root)
         curr_content = fpath_abs.read_text(encoding="utf-8")
         
@@ -63,13 +63,13 @@ def job(root: Path):
 
             try: # capture and report if any error occurd while processing this file
                 now = datetime.now(timezone.utc) # the `fsrs` package works with UTC
-                start_i, end_i = extract_front_matter(curr_content)
+                start_i, end_i = extract_front_matter_with_guard(curr_content)
                 has_frontmatter= end_i != 0
                 frontmatter = yaml.safe_load(curr_content[start_i:end_i].strip('\n\r-') if has_frontmatter else "") or {}
                 old_data= frontmatter.get(STORE_KEY)
                 old_card = Card.from_dict(old_data) if old_data else Card()
-                
-                if old_card.last_review  is None or now >= old_card.due:
+
+                if old_card.last_review is None or now >= old_card.due:
                     proc_counter += 1
 
                     late = now - old_card.due if old_card.due else 0
@@ -94,9 +94,11 @@ def job(root: Path):
 
                 else:
                     pass
-            except:
-                print(f"error for {fpath_abs}")
-                raise
+
+            except Exception as e:
+                print(f"error for {fpath_abs}: {e}")
+                continue
+
         else: # ignore other notes
             pass
 
