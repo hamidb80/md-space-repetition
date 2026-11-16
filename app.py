@@ -21,11 +21,10 @@ def get_default_timezone():
 
 def extract_front_matter(content: str) -> tuple:
     if content.startswith("---"):
-        start_content_i = 3 
-        end_content_i = content.find('---', start_content_i)
+        end_content_i = content.find('---', 3)
         if end_content_i != -1:
-            return (0, start_content_i, end_content_i, end_content_i+3)
-    return (0, 0, 0, 0)
+            return (0, end_content_i+3)
+    return (0, 0)
 
 def get_remember_rating_terminal():
     while True:
@@ -64,9 +63,10 @@ def job(root: Path):
             try: # capture and report if any error occurd while processing this file
                 tz = get_default_timezone()
                 now = datetime.now(tz) # the `fsrs` package works with UTC
-                start_i, content_start_i, content_end_i, end_i = extract_front_matter(curr_content)
+                start_i, end_i = extract_front_matter(curr_content)
+                content_start_i, content_end_i = start_i+3, end_i-3
                 frontmatter_exists= end_i != 0
-                frontmatter = yaml.safe_load(curr_content[content_start_i:content_end_i]) or {}
+                frontmatter = yaml.safe_load(curr_content[content_start_i:content_end_i] if frontmatter_exists else "") or {}
                 old_data : dict= frontmatter.get(STORE_KEY, {})
 
                 STATE_KEY = 'state'
@@ -78,6 +78,7 @@ def job(root: Path):
                 old_last_review= unix_to_datetime(old_data.get(LAST_REVIEW_KEY))
 
                 if old_due is None or now >= old_due:
+                    late = now - old_due if old_due else 0
                     old_card = Card(
                         card_id= fpath_rel,
                         step= None,
@@ -87,7 +88,8 @@ def job(root: Path):
                         state = old_state,
                         last_review= old_last_review)
 
-                    print("\n>>", fpath_rel)
+                    if late: print(f"\n[late: {late}]")
+                    print(f">> {fpath_rel}")
                     rating = get_remember_rating_terminal()
                     new_card, review_log = scheduler.review_card(old_card, rating)
                     new_data = {
@@ -97,6 +99,7 @@ def job(root: Path):
                     }
 
                     print(f"\nuntil next: {new_card.due - now}")
+                    print("---------------------")
 
                     new_frontmatter = yaml.safe_dump({**frontmatter, STORE_KEY: new_data})
                     replacement = f"---\n{new_frontmatter}---" + ("" if frontmatter_exists else "\n\n")
