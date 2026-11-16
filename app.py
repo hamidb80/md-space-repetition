@@ -28,12 +28,13 @@ def extract_front_matter(content: str) -> tuple:
 
 def get_remember_rating_terminal():
     while True:
-        print("how was that? [E]asy [G]ood [H]ard: ", end="", flush=True)
+        print("how was that? [E]asy [G]ood [H]ard [I]gnore: ", end="", flush=True)
         key = keyboard.read_key()     # blocks until a key is pressed
         match key:
             case 'E' | 'e': return Rating.Easy
             case 'G' | 'g': return Rating.Good
             case 'H' | 'h': return Rating.Hard
+            case 'I' | 'i': return None
             case _: 
                 print(f"\n invalid input '{key}', please try again.")
 
@@ -90,7 +91,10 @@ def job(root: Path):
 
                     if late: print(f"\n[late: {late}]")
                     print(f">> {fpath_rel}")
+
                     rating = get_remember_rating_terminal()
+                    if rating is None: continue
+
                     new_card, review_log = scheduler.review_card(old_card, rating)
                     new_data = {
                         STATE_KEY: int(new_card.state),
