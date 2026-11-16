@@ -1,5 +1,4 @@
 # imports -------------------------
-import keyboard
 import yaml
 from fsrs import Scheduler, Card, Rating, State
 
@@ -24,7 +23,7 @@ def extract_front_matter_with_guard(content: str) -> tuple:
 def get_remember_rating_terminal():
     while True:
         print("how was that? [E]asy [G]ood [H]ard [I]gnore: ", end="", flush=True)
-        key = keyboard.read_key()     # blocks until a key is pressed
+        key = input()     # blocks until a key is pressed
         match key:
             case 'E' | 'e': return key, Rating.Easy
             case 'G' | 'g': return key, Rating.Good
