@@ -58,7 +58,8 @@ def job(root: Path):
                 now = datetime.now(timezone.utc) # the `fsrs` package works with UTC
                 start_i, end_i = extract_front_matter_with_guard(curr_content)
                 has_frontmatter= end_i != 0
-                frontmatter = yaml.safe_load(curr_content[start_i:end_i].strip('\n\r-') if has_frontmatter else "") or {}
+                meta = curr_content[start_i:end_i].strip('\n\r-') if has_frontmatter else ""
+                frontmatter = yaml.safe_load(meta) or {}
                 old_data= frontmatter.get(STORE_KEY)
                 old_card = Card.from_dict(old_data) if old_data else Card()
 
