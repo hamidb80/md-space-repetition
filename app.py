@@ -3,7 +3,6 @@ import keyboard
 import yaml
 from fsrs import Scheduler, Card, Rating, State
 
-# from zoneinfo import ZoneInfo
 from datetime import datetime, timezone
 from pathlib import Path
 import argparse
@@ -37,12 +36,6 @@ def get_remember_rating_terminal():
 def replace_slice(s: str, start: int, stop: int, new: str) -> str:
     return s[:start] + new + s[stop:]
 
-def try_parse_float(s: str):
-    try:
-        return float(s)
-    except: 
-        return None
-
 # main -------------------------
 
 def job(root: Path):
@@ -54,7 +47,7 @@ def job(root: Path):
     scheduler = Scheduler() #. Initialize the FSRS scheduler with default parameters
 
     for fpath_abs in root.rglob("*.md"): # for all markdown file
-        fpath_rel = fpath_abs.relative_to(args.root)
+        fpath_rel = fpath_abs.relative_to(root)
         curr_content = fpath_abs.read_text(encoding="utf-8")
         
         all_counter += 1
@@ -72,7 +65,7 @@ def job(root: Path):
                 if old_card.last_review is None or now >= old_card.due:
                     proc_counter += 1
 
-                    late = now - old_card.due if old_card.due else 0
+                    late = now - old_card.due if old_card.due else None
 
                     if late: print(f"\n[late: {late}]")
                     print(f'>> "{fpath_rel}"')
