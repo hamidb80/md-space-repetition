@@ -2,6 +2,7 @@
 import yaml
 from fsrs import Scheduler, Card, Rating, State
 
+import random
 from datetime import datetime, timezone
 from pathlib import Path
 import argparse
@@ -46,7 +47,10 @@ def job(root: Path):
 
     scheduler = Scheduler() #. Initialize the FSRS scheduler with default parameters
 
-    for fpath_abs in root.rglob("*.md"): # for all markdown file
+    md_fpaths = list(root.rglob("*.md"))
+    random.shuffle(md_fpaths)
+
+    for fpath_abs in md_fpaths: # for all markdown file
         fpath_rel = fpath_abs.relative_to(root)
         curr_content = fpath_abs.read_text(encoding="utf-8")
         
