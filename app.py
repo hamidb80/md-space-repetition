@@ -75,7 +75,7 @@ def job(root: Path):
 
                     new_card, review_log = scheduler.review_card(old_card, rating)
 
-                    print(f"\nuntil next: {new_card.due - now}")
+                    print(f"until next: {new_card.due - now}")
                     print("---------------------")
 
                     new_frontmatter = yaml.safe_dump({**frontmatter, STORE_KEY: new_card.to_dict()})
