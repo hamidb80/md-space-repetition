@@ -79,7 +79,7 @@ def job(root: Path):
                     print(f"until next: {new_card.due - now}")
                     print("---------------------")
 
-                    new_frontmatter = yaml.safe_dump({**frontmatter, STORE_KEY: new_card.to_dict()})
+                    new_frontmatter = yaml.safe_dump({**frontmatter, STORE_KEY: new_card.to_dict()}, allow_unicode=True)
                     replacement = f"---\n{new_frontmatter}---" + ("" if has_frontmatter else "\n\n")
                     new_content = replace_slice(curr_content, start_i, end_i, replacement)
                     fpath_abs.write_text(new_content, encoding="utf-8")
