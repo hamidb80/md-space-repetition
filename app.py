@@ -66,8 +66,9 @@ def job(root: Path):
                 frontmatter = yaml.safe_load(meta) or {}
                 old_data= frontmatter.get(STORE_KEY)
                 old_card = Card.from_dict(old_data) if old_data else Card()
+                is_due = old_card.last_review is None or now >= old_card.due
 
-                if old_card.last_review is None or now >= old_card.due:
+                if is_due:
                     proc_counter += 1
                     late = now - old_card.due if old_card.due else None
 
@@ -105,8 +106,9 @@ if __name__ == "__main__":
     parser.add_argument("root", type=Path, help="Root directory to scan")
     args = parser.parse_args()
 
+    print("=== Run ===")
     all_counter, had_counter, proc_counter, revised_counter = job(args.root)
-    
+
     print("\n=== Report ===")
     print(f"Scanned {all_counter} .md files")
     print(f"{had_counter} of them contained {REMEMBER_TAG}")
