@@ -65,7 +65,6 @@ def job(root: Path):
 
                 if old_card.last_review is None or now >= old_card.due:
                     proc_counter += 1
-
                     late = now - old_card.due if old_card.due else None
 
                     if late: print(f"\n[late: {late}]")
