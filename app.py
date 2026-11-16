@@ -22,13 +22,14 @@ def extract_front_matter_with_guard(content: str) -> tuple:
 
 def get_remember_rating_terminal():
     while True:
-        print("how was that? [E]asy [G]ood [H]ard [I]gnore: ", end="", flush=True)
+        print("how was that? [A]gain [E]asy [G]ood [H]ard [I]gnore: ", end="", flush=True)
         key = input()     # blocks until a key is pressed
         match key:
-            case 'E' | 'e': return key, Rating.Easy
-            case 'G' | 'g': return key, Rating.Good
-            case 'H' | 'h': return key, Rating.Hard
-            case 'I' | 'i': return key, None
+            case 'A' | 'a': return Rating.Again
+            case 'E' | 'e': return Rating.Easy
+            case 'G' | 'g': return Rating.Good
+            case 'H' | 'h': return Rating.Hard
+            case 'I' | 'i': return None
             case _: 
                 print(f"\n invalid input '{key}', please try again.")
 
@@ -69,8 +70,7 @@ def job(root: Path):
                     if late: print(f"\n[late: {late}]")
                     print(f'>> "{fpath_rel}"')
 
-                    label, rating = get_remember_rating_terminal()
-                    print(label)
+                    rating = get_remember_rating_terminal()
                     if rating is None: continue
 
                     revised_counter += 1
