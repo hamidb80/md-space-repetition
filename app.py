@@ -15,10 +15,6 @@ STORE_KEY = 'remember'
 
 # utils -------------------------
 
-def get_default_timezone():
-    # return datetime.now().astimezone().tzinfo
-    return timezone.utc
-
 def extract_front_matter(content: str) -> tuple:
     if content.startswith("---"):
         end_content_i = content.find('---', 3)
@@ -31,24 +27,21 @@ def get_remember_rating_terminal():
         print("how was that? [E]asy [G]ood [H]ard [I]gnore: ", end="", flush=True)
         key = keyboard.read_key()     # blocks until a key is pressed
         match key:
-            case 'E' | 'e': return Rating.Easy
-            case 'G' | 'g': return Rating.Good
-            case 'H' | 'h': return Rating.Hard
-            case 'I' | 'i': return None
+            case 'E' | 'e': return key, Rating.Easy
+            case 'G' | 'g': return key, Rating.Good
+            case 'H' | 'h': return key, Rating.Hard
+            case 'I' | 'i': return key, None
             case _: 
                 print(f"\n invalid input '{key}', please try again.")
 
 def replace_slice(s: str, start: int, stop: int, new: str) -> str:
     return s[:start] + new + s[stop:]
 
-def unix_from_datatime(dt: datetime) -> float:
-    return int(dt.timestamp())
-
-def unix_to_datetime(ts) -> datetime:
-    if ts is None:
+def try_parse_float(s: str):
+    try:
+        return float(s)
+    except: 
         return None
-    else:
-        return datetime.fromtimestamp(ts, tz=get_default_timezone())
 
 # main -------------------------
 
@@ -62,50 +55,30 @@ def job(root: Path):
         if REMEMBER_TAG in curr_content: # check if the corresponding tag exists
 
             try: # capture and report if any error occurd while processing this file
-                tz = get_default_timezone()
-                now = datetime.now(tz) # the `fsrs` package works with UTC
+                now = datetime.now(timezone.utc) # the `fsrs` package works with UTC
                 start_i, end_i = extract_front_matter(curr_content)
                 content_start_i, content_end_i = start_i+3, end_i-3
                 frontmatter_exists= end_i != 0
                 frontmatter = yaml.safe_load(curr_content[content_start_i:content_end_i] if frontmatter_exists else "") or {}
-                old_data : dict= frontmatter.get(STORE_KEY, {})
-
-                STATE_KEY = 'state'
-                DUE_KEY = 'due'
-                LAST_REVIEW_KEY = 'last_review'
-
-                old_state= State(old_data.get(STATE_KEY, int(State.Learning)))
-                old_due= unix_to_datetime(old_data.get(DUE_KEY))
-                old_last_review= unix_to_datetime(old_data.get(LAST_REVIEW_KEY))
-
-                if old_due is None or now >= old_due:
-                    late = now - old_due if old_due else 0
-                    old_card = Card(
-                        card_id= fpath_rel,
-                        step= None,
-                        stability= None,
-                        difficulty = None,
-                        due= old_due,
-                        state = old_state,
-                        last_review= old_last_review)
+                old_data= frontmatter.get(STORE_KEY)
+                old_card = Card.from_dict(old_data) if old_data else Card()
+                
+                if old_card.last_review  is None or now >= old_card.due:
+                    late = now - old_card.due if old_card.due else 0
 
                     if late: print(f"\n[late: {late}]")
                     print(f">> {fpath_rel}")
 
-                    rating = get_remember_rating_terminal()
+                    label, rating = get_remember_rating_terminal()
+                    print(label)
                     if rating is None: continue
 
                     new_card, review_log = scheduler.review_card(old_card, rating)
-                    new_data = {
-                        STATE_KEY: int(new_card.state),
-                        DUE_KEY: unix_from_datatime(new_card.due),
-                        LAST_REVIEW_KEY: unix_from_datatime(new_card.last_review),
-                    }
 
                     print(f"\nuntil next: {new_card.due - now}")
                     print("---------------------")
 
-                    new_frontmatter = yaml.safe_dump({**frontmatter, STORE_KEY: new_data})
+                    new_frontmatter = yaml.safe_dump({**frontmatter, STORE_KEY: new_card.to_dict()})
                     replacement = f"---\n{new_frontmatter}---" + ("" if frontmatter_exists else "\n\n")
                     new_content = replace_slice(curr_content, start_i, end_i, replacement)
                     fpath_abs.write_text(new_content, encoding="utf-8")
