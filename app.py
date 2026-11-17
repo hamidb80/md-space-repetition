@@ -67,13 +67,13 @@ def job(root: Path):
             had_counter += 1
 
             try: # capture and report if any error occurd while processing this file
-                now = datetime.now(timezone.utc) # the `fsrs` package works with UTC
                 start_i, end_i = extract_front_matter_with_guard(curr_content)
                 has_frontmatter= end_i != 0
                 meta = curr_content[start_i:end_i].strip('\n\r-') if has_frontmatter else ""
                 frontmatter = yaml.safe_load(meta) or {}
                 old_data= frontmatter.get(STORE_KEY)
                 old_card = Card.from_dict(old_data) if old_data else Card()
+                now = datetime.now(timezone.utc) # the `fsrs` package works with UTC
                 is_due = old_card.last_review is None or now >= old_card.due
 
                 if is_due:
