@@ -7,11 +7,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 import argparse
 
-# consts -------------------------
-
-REMEMBER_TAG = "#remember"
-STORE_KEY = 'remember'
-
 # utils -------------------------
 
 def extract_front_matter_with_guard(content: str) -> tuple:
@@ -39,7 +34,8 @@ def replace_slice(s: str, start: int, stop: int, new: str) -> str:
 
 # main -------------------------
 
-def job(root: Path):
+def job(root: Path, tag: str, frontmatter_key: str):
+
     all_counter = 0
     had_counter = 0
     proc_counter = 0
@@ -63,7 +59,7 @@ def job(root: Path):
         if all_counter % 50 == 0:
             print(".", end="")
 
-        if REMEMBER_TAG in curr_content: # check if the corresponding tag exists
+        if tag in curr_content: # check if the corresponding tag exists
             had_counter += 1
 
             try: # capture and report if any error occurd while processing this file
@@ -71,7 +67,7 @@ def job(root: Path):
                 has_frontmatter= end_i != 0
                 meta = curr_content[start_i:end_i].strip('\n\r-') if has_frontmatter else ""
                 frontmatter = yaml.safe_load(meta) or {}
-                old_data= frontmatter.get(STORE_KEY)
+                old_data= frontmatter.get(frontmatter_key)
                 old_card = Card.from_dict(old_data) if old_data else Card()
                 now = datetime.now(timezone.utc) # the `fsrs` package works with UTC
                 is_due = old_card.last_review is None or now >= old_card.due
@@ -92,7 +88,7 @@ def job(root: Path):
                     print(f"until next: {new_card.due - now}")
                     print("---------------------")
 
-                    new_frontmatter = yaml.safe_dump({**frontmatter, STORE_KEY: new_card.to_dict()}, allow_unicode=True)
+                    new_frontmatter = yaml.safe_dump({**frontmatter, frontmatter_key: new_card.to_dict()}, allow_unicode=True)
                     replacement = f"---\n{new_frontmatter}---" + ("" if has_frontmatter else "\n\n")
                     new_content = replace_slice(curr_content, start_i, end_i, replacement)
                     fpath_abs.write_text(new_content, encoding="utf-8")
@@ -110,15 +106,17 @@ def job(root: Path):
     return (all_counter, had_counter, proc_counter, revised_counter)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=f"Spaced Repetition System for your markdown files (.md) tagged with {REMEMBER_TAG}. stores information in front matter as '{STORE_KEY}' object")
+    parser = argparse.ArgumentParser(description="Spaced Repetition System for your markdown files (.md) tagged with the specified tag. Stores information in front matter as the specified key.")
     parser.add_argument("root", type=Path, help="Root directory to scan")
+    parser.add_argument("-t", "--tag", default="#remember", help="tag to look for in the note (default: %(default)s)")
+    parser.add_argument("-k", "--key", default="remember", help="front-matter property key (default: %(default)s)")
     args = parser.parse_args()
-
+    
     print("=== Run ===")
-    all_counter, had_counter, proc_counter, revised_counter = job(args.root)
+    all_counter, had_counter, proc_counter, revised_counter = job(args.root, args.tag, args.key)
 
     print("\n=== Report ===")
     print(f"Scanned {all_counter} .md files")
-    print(f"{had_counter} of them contained {REMEMBER_TAG}")
+    print(f"{had_counter} of them contained {args.tag}")
     print(f"{proc_counter} of them were overdue")
     print(f"{revised_counter} of those were remembered")
